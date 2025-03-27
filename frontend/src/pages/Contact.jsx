@@ -25,13 +25,13 @@ const Contact = () => {
             <div>
               <p className="font-semibold text-lg text-gray-600">Our OFFICE</p>
               <p>
-                54709 Willms Station <br />
-                Suite 350, Washington, USA
+                Param doctor house near railway station <br />
+                 lal darwaja, Surat, Gujarat, India
               </p>
             </div>
             <div>
-              <p>Tel: (415) 555‑0132</p>
-              <p>Email: keshvalavijay11@gmail.com</p>
+              <p>Tel: (+91) 1234567890</p>
+              <p>Email: careconnect@gmail.com</p>
             </div>
             <div>
               <p className="font-semibold text-lg text-gray-600">
