@@ -4,6 +4,8 @@ import 'dotenv/config';
 import connectDB from './config/mongodb.js';
 import cloudinary from './config/cloudinary.js';
 import adminRouter from './routes/adminRoute.js';
+import doctorRouter from './routes/doctorRoute.js';
+import userRouter from './routes/userRoute.js';
 
 // App config
 const app = express();
@@ -21,6 +23,8 @@ console.log("Cloudinary Config Loaded:", cloudinary.config());
 
 // API Endpoints
 app.use('/api/admin', adminRouter); // localhost:4000/api/admin
+app.use('/api/doctor',doctorRouter)
+app.use('/api/user',userRouter)
 
 app.get('/', (req, res) => {
     res.send("API Running");

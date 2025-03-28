@@ -1,14 +1,38 @@
-import { createContext } from "react";
+import { createContext, useEffect, useState } from "react";
 import { doctors } from "../assets/assets";
+import axios from 'axios'
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; 
 export const AppContext = createContext()
 
 const AppContextProvider = (props) =>{
+    const [doctors,setDoctors] = useState([])
 
     const currencySymbol = 'Rs/- '
+    const backendUrl = import.meta.env.VITE_BACKEND_URL
     const value ={
         doctors,
         currencySymbol
     }
+
+    const getDoctorsData = async()=>{
+        try {
+            console.log(import.meta.env.VITE_BACKEND_URL);
+            const {data} = await axios.get(backendUrl + '/api/doctor/list')
+            if (data.success) {
+                setDoctors(data.doctors)
+            }else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message)
+        }
+    }
+
+    useEffect(()=>{
+        getDoctorsData()
+    },[])
 
     return(
         <AppContext.Provider value={value}>
