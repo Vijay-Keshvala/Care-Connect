@@ -1,64 +1,65 @@
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
-import {v2 as cloudinary} from 'cloudinary'
+import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
+import appointmentrModel from '../models/appointmentModel.js'
+import userModel from '../models/userModel.js'
 import jwt from 'jsonwebtoken'
+import appointmentModel from '../models/appointmentModel.js'
 // API for adding doctor //
 
-
-
-const addDoctor = async(req,res)=>{
+const addDoctor = async (req, res) => {
 
 
     try {
-        const {name, email, password, speciality, degree, experience, about, fees, address} =  req.body
+        const { name, email, password, speciality, degree, experience, about, fees, address } = req.body
         const imageFile = req.file
-        
+
         // checking all data to add doctor //
         if (!name || !email || !password || !speciality || !degree || !experience || !about || !fees || !address) {
-            return res.json({success:false,messgae:"Missing data "})
+            return res.json({ success: false, messgae: "Missing data " })
         }
 
         // validating email //
-        if(!validator.isEmail(email)){
-            return res.json({success:false,messgae:"Please enter valid email "})
+        if (!validator.isEmail(email)) {
+            return res.json({ success: false, messgae: "Please enter valid email " })
         }
 
         // validating password strong //
-        if(password.length < 8){
-            return res.json({success:false,messgae:"Password should be strong "})
+        if (password.length < 8) {
+            return res.json({ success: false, messgae: "Password should be strong " })
         }
 
         // hashing password //
         const salt = await bcrypt.genSalt(10)
-        const hasshedPassword = await bcrypt.hash(password,salt)
+        const hasshedPassword = await bcrypt.hash(password, salt)
 
         //upload image to cloudinary //
-        const imageUpload = await cloudinary.uploader.upload(imageFile.path,{resource_type:"image"})
+        const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: "image" })
         const imageUrl = imageUpload.secure_url
 
         const doctorData = {
             name,
             email,
-            image:imageUrl,
-            password:hasshedPassword,
+            image: imageUrl,
+            password: hasshedPassword,
             speciality,
             degree,
             experience,
             about,
             fees,
-            address:JSON.parse(address),
-            date:Date.now()
+            address: JSON.parse(address),
+            date: Date.now()
         }
 
         const newDoctor = new doctorModel(doctorData)
         await newDoctor.save()
 
-        res.json({success:true,messgae:"Doctor Added"})
-    
+        res.json({ success: true, messgae: "Doctor Added" })
+
     } catch (error) {
         console.log(error);
-        res.json({success:false,messgae:error.messgae})
+        res.json({ success: false, messgae: error.messgae })
     }
 
 }
@@ -66,19 +67,19 @@ const addDoctor = async(req,res)=>{
 
 // ADMIN Login API //
 
-const loginAdmin = async (req,res) =>{
+const loginAdmin = async (req, res) => {
     try {
-        const {email,password} = req.body
+        const { email, password } = req.body
         // validating email //
-        if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
-            const token = jwt.sign(email+password,process.env.JWT_TOKEN)
-            res.json({success:true,token})
-        }else{
-            res.json({success:false,messgae:"Invalid credentials"})
+        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+            const token = jwt.sign(email + password, process.env.JWT_TOKEN)
+            res.json({ success: true, token })
+        } else {
+            res.json({ success: false, messgae: "Invalid credentials" })
         }
     } catch (error) {
         console.log(error);
-    res.json({success:false,messgae:error.messgae})
+        res.json({ success: false, messgae: error.messgae })
     }
 }
 
@@ -95,4 +96,65 @@ const allDoctors = async (req, res) => {
 };
 
 
-export {addDoctor,loginAdmin, allDoctors}
+// API to get all appointment list //
+
+const appointmentAdmin = async (req, res) => {
+    try {
+        const appointments = await appointmentrModel.find({})
+        res.json({ success: true, appointments })
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+// API for admin appointment cancellation //
+
+const appointmentCancel = async(req,res)=>{
+    try {
+        const {appointmentId} = req.body
+        const appointmentData = await appointmentModel.findById(appointmentId)
+
+       
+        await appointmentModel.findByIdAndUpdate(appointmentId,{cancelled:true})
+
+        // release doctor slot //
+
+        const {docId,slotDate,slotTime} = appointmentData
+
+        const doctorData = await doctorModel.findById(docId)
+
+        let slots_booked = doctorData.slots_booked
+        slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+
+        await doctorModel.findByIdAndUpdate(docId,{slots_booked})
+        res.json({success:true,message:"Appointment Cancelled"})
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+// API to get dashboard data for admin panel //
+const adminDashboard = async(req,res)=>{
+    try {
+        const doctors = await doctorModel.find({})
+        const users = await userModel.find({})
+        const appointments = await appointmentModel.find({})
+
+        const dashData = {
+            doctors:doctors.length,
+            appointments: appointments.length,
+            patients:users.length,
+            latestAppointments:appointments.reverse().slice(0,5)
+
+        }
+        res.json({success:true,dashData})
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export { addDoctor, loginAdmin, allDoctors, appointmentAdmin, appointmentCancel, adminDashboard}
